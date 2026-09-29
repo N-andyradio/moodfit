@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <!-- 모바일 화면에서도 크기가 알맞게 보이도록 설정 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="성별과 오늘의 기분을 고르면 AI가 상의, 하의, 신발을 추천해주는 코디 도우미" />
+  <title>무드핏(MoodFit) - 기분 맞춤 코디 추천</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ===== 상단 메뉴(헤더) ===== -->
+  <header class="header">
+    <div class="header__inner">
+      <!-- 로고: 누르면 홈으로 이동 -->
+      <a href="#home" class="logo nav-link">무드핏<span class="logo__en">MoodFit</span></a>
+
+      <!-- 햄버거 버튼: 모바일에서만 보여요 -->
+      <button
+        type="button"
+        class="menu-toggle"
+        id="menuToggle"
+        aria-label="메뉴 열기"
+        aria-expanded="false"
+        aria-controls="mainNav"
+      >
+        <span class="menu-toggle__bar"></span>
+        <span class="menu-toggle__bar"></span>
+        <span class="menu-toggle__bar"></span>
+      </button>
+
+      <!-- 메뉴 목록 -->
+      <nav class="nav" id="mainNav" aria-label="주요 메뉴">
+        <ul class="nav__list">
+          <li><a href="#home" class="nav__link nav-link">홈</a></li>
+          <li><a href="#recommend" class="nav__link nav-link">코디 추천</a></li>
+          <li><a href="#guide" class="nav__link nav-link">이용 방법</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===== 1. 홈 섹션 ===== -->
+    <section class="section hero" id="home">
+      <div class="container hero__inner">
+        <p class="hero__badge">AI 코디 도우미</p>
+        <h1 class="hero__title">무드핏 <span class="hero__title-en">MoodFit</span></h1>
+        <p class="hero__desc">오늘의 기분만 알려주세요. 딱 맞는 코디를 AI가 골라드릴게요.</p>
+        <a href="#recommend" class="btn btn--primary btn--large nav-link">코디 받으러 가기</a>
+      </div>
+    </section>
+
+    <!-- ===== 2. 코디 추천 섹션 ===== -->
+    <section class="section recommend" id="recommend">
+      <div class="container">
+        <h2 class="section__title">코디 추천</h2>
+        <p class="section__desc">성별과 오늘의 기분을 하나씩 골라주세요.</p>
+
+        <div class="card recommend__form">
+          <!-- 성별 선택 -->
+          <div class="choice">
+            <h3 class="choice__title" id="genderLabel">성별</h3>
+            <div class="choice__group" id="genderGroup" role="group" aria-labelledby="genderLabel">
+              <button type="button" class="chip" data-value="여성" aria-pressed="false">여성</button>
+              <button type="button" class="chip" data-value="남성" aria-pressed="false">남성</button>
+              <button type="button" class="chip" data-value="상관없음" aria-pressed="false">상관없음</button>
+            </div>
+          </div>
+
+          <!-- 기분 선택 -->
+          <div class="choice">
+            <h3 class="choice__title" id="moodLabel">오늘의 기분</h3>
+            <div class="choice__group" id="moodGroup" role="group" aria-labelledby="moodLabel">
+              <button type="button" class="chip" data-value="신나요" aria-pressed="false">😆 신나요</button>
+              <button type="button" class="chip" data-value="평온해요" aria-pressed="false">😌 평온해요</button>
+              <button type="button" class="chip" data-value="우울해요" aria-pressed="false">😢 우울해요</button>
+              <button type="button" class="chip" data-value="피곤해요" aria-pressed="false">😪 피곤해요</button>
+              <button type="button" class="chip" data-value="자신감 있어요" aria-pressed="false">😎 자신감 있어요</button>
+            </div>
+          </div>
+
+          <!-- 추천 받기 버튼 -->
+          <button type="button" class="btn btn--primary btn--block" id="recommendBtn">추천 받기</button>
+
+          <!-- 안내 메시지(오류, 로딩 등)가 여기에 표시돼요 -->
+          <!-- aria-live: 화면 낭독기가 바뀐 내용을 읽어줘요 -->
+          <div class="status" id="status" role="status" aria-live="polite" hidden>
+            <span class="spinner" id="spinner" aria-hidden="true" hidden></span>
+            <span id="statusText"></span>
+          </div>
+        </div>
+
+        <!-- 결과 카드: 처음에는 숨겨져 있다가 추천을 받으면 보여요 -->
+        <div class="card result" id="result" hidden>
+          <h3 class="result__title">오늘의 추천 코디</h3>
+          <ul class="result__list">
+            <li class="result__item">
+              <span class="result__icon" aria-hidden="true">👕</span>
+              <div>
+                <p class="result__label">상의</p>
+                <p class="result__value" id="resultTop"></p>
+              </div>
+            </li>
+            <li class="result__item">
+              <span class="result__icon" aria-hidden="true">👖</span>
+              <div>
+                <p class="result__label">하의</p>
+                <p class="result__value" id="resultBottom"></p>
+              </div>
+            </li>
+            <li class="result__item">
+              <span class="result__icon" aria-hidden="true">👟</span>
+              <div>
+                <p class="result__label">신발</p>
+                <p class="result__value" id="resultShoes"></p>
+              </div>
+            </li>
+          </ul>
+          <div class="result__reason">
+            <p class="result__label">추천 이유</p>
+            <p class="result__reason-text" id="resultReason"></p>
+          </div>
+          <button type="button" class="btn btn--outline btn--block" id="retryBtn">다시 추천받기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3. 이용 방법 / FAQ 섹션 ===== -->
+    <section class="section guide" id="guide">
+      <div class="container">
+        <h2 class="section__title">이용 방법</h2>
+        <p class="section__desc">딱 3단계면 끝나요.</p>
+
+        <!-- 3단계 이용 방법 -->
+        <ol class="steps">
+          <li class="card step">
+            <span class="step__num">1</span>
+            <h3 class="step__title">성별 고르기</h3>
+            <p class="step__desc">여성, 남성, 상관없음 중 하나를 골라주세요.</p>
+          </li>
+          <li class="card step">
+            <span class="step__num">2</span>
+            <h3 class="step__title">기분 고르기</h3>
+            <p class="step__desc">지금 내 기분과 가장 가까운 것을 선택해요.</p>
+          </li>
+          <li class="card step">
+            <span class="step__num">3</span>
+            <h3 class="step__title">코디 확인하기</h3>
+            <p class="step__desc">추천 받기를 누르면 AI가 상의·하의·신발을 골라줘요.</p>
+          </li>
+        </ol>
+
+        <!-- 자주 묻는 질문: details 태그는 누르면 열리고 닫혀요 -->
+        <h3 class="faq__heading">자주 묻는 질문</h3>
+        <div class="faq">
+          <details class="card faq__item">
+            <summary class="faq__q">무료로 사용할 수 있나요?</summary>
+            <p class="faq__a">네, 무드핏은 회원가입 없이 무료로 사용할 수 있어요.</p>
+          </details>
+          <details class="card faq__item">
+            <summary class="faq__q">같은 기분으로 다시 추천받을 수 있나요?</summary>
+            <p class="faq__a">물론이에요. "다시 추천받기" 버튼을 누르면 새로운 코디를 받아볼 수 있어요.</p>
+          </details>
+          <details class="card faq__item">
+            <summary class="faq__q">추천받은 옷을 바로 살 수 있나요?</summary>
+            <p class="faq__a">무드핏은 코디 아이디어를 알려주는 서비스예요. 추천받은 스타일을 참고해 원하는 곳에서 찾아보세요.</p>
+          </details>
+          <details class="card faq__item">
+            <summary class="faq__q">"잠시 후 다시 시도해주세요"라는 메시지가 나와요.</summary>
+            <p class="faq__a">서버가 잠시 바쁘거나 인터넷 연결이 불안정할 때 나오는 메시지예요. 조금 기다린 뒤 다시 눌러주세요.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== 푸터 ===== -->
+  <footer class="footer">
+    <p>&copy; 2026 무드핏(MoodFit)</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

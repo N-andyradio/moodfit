@@ -1,0 +1,682 @@
+/* =========================================
+   무드핏(MoodFit) 스타일
+   - 모바일 화면을 기본으로 만들고,
+     화면이 넓어지면(태블릿, 데스크톱) 레이아웃을 바꿔요.
+   ========================================= */
+
+/* ----- 1. 자주 쓰는 색과 값을 변수로 정리 ----- */
+/* 변수로 만들어 두면 한 곳만 바꿔도 전체 색이 바뀌어요 */
+:root {
+  --color-primary: #ff7a8a;       /* 메인 색(코랄 핑크) */
+  --color-primary-dark: #f15a6d;  /* 버튼에 마우스를 올렸을 때 */
+  --color-primary-light: #ffe8eb; /* 연한 배경용 */
+  --color-bg: #fffaf7;            /* 페이지 배경 */
+  --color-surface: #ffffff;       /* 카드 배경 */
+  --color-text: #2f2a33;          /* 기본 글자색 */
+  --color-muted: #7a7380;         /* 흐린 글자색 */
+  --color-border: #efe6e8;        /* 테두리 */
+  --color-error: #d93a4f;         /* 오류 글자색 */
+  --color-error-bg: #fff0f2;      /* 오류 배경 */
+
+  --radius-lg: 24px;              /* 큰 카드 모서리 둥글기 */
+  --radius-md: 16px;
+  --radius-pill: 999px;           /* 알약 모양 버튼 */
+  --shadow: 0 8px 24px rgba(47, 42, 51, 0.06);
+
+  --header-height: 64px;          /* 상단 메뉴 높이 */
+}
+
+/* ----- 2. 기본 설정 ----- */
+/* 박스 크기에 테두리와 여백을 포함해서 계산해요 (레이아웃이 덜 깨져요) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* 메뉴를 누르면 부드럽게 스크롤돼요 */
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-bg);
+  /* 한국어 단어가 중간에서 끊기지 않게 해요 */
+  word-break: keep-all;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* 키보드로 이동할 때 현재 위치가 잘 보이게 해요 */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 가운데 정렬된 내용 영역 */
+.container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ----- 3. 상단 메뉴(헤더) ----- */
+.header {
+  position: fixed;   /* 스크롤해도 위에 고정 */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 250, 247, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.header__inner {
+  max-width: 1120px;
+  height: var(--header-height);
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.logo__en {
+  margin-left: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+/* 햄버거 버튼 (모바일용) */
+.menu-toggle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.menu-toggle__bar {
+  display: block;
+  height: 2px;
+  background: var(--color-text);
+  border-radius: 2px;
+  transition: transform 0.25s, opacity 0.25s;
+}
+
+/* 메뉴가 열리면 햄버거 모양이 X 모양으로 바뀌어요 */
+.menu-toggle[aria-expanded="true"] .menu-toggle__bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.menu-toggle[aria-expanded="true"] .menu-toggle__bar:nth-child(2) {
+  opacity: 0;
+}
+.menu-toggle[aria-expanded="true"] .menu-toggle__bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* 모바일 메뉴: 기본은 숨김, is-open 클래스가 붙으면 보여요 */
+.nav {
+  display: none;
+  position: absolute;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
+}
+
+.nav.is-open {
+  display: block;
+}
+
+.nav__list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 20px 16px;
+}
+
+.nav__link {
+  display: block;
+  padding: 12px 8px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.nav__link:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+/* ----- 4. 공통 섹션 ----- */
+.section {
+  padding: 72px 0;
+  /* 메뉴를 눌러 이동했을 때 제목이 헤더에 가려지지 않게 해요 */
+  scroll-margin-top: var(--header-height);
+}
+
+.section__title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.section__desc {
+  margin-top: 8px;
+  margin-bottom: 32px;
+  text-align: center;
+  color: var(--color-muted);
+}
+
+/* 둥근 카드 공통 스타일 */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* ----- 5. 버튼 ----- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 28px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.btn--outline {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.btn--outline:hover {
+  background: var(--color-primary-light);
+}
+
+.btn--large {
+  padding: 16px 36px;
+  font-size: 1.1rem;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* 비활성화된 버튼(요청 중)은 흐리게 보여요 */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ----- 6. 홈(히어로) 섹션 ----- */
+.hero {
+  /* 헤더 높이만큼 위쪽 여백을 더 줘요 */
+  padding-top: calc(var(--header-height) + 72px);
+  padding-bottom: 88px;
+  background: linear-gradient(160deg, #ffe8eb 0%, #fff4e6 55%, #fffaf7 100%);
+  text-align: center;
+}
+
+.hero__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.hero__badge {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.hero__title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.hero__title-en {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.hero__desc {
+  max-width: 480px;
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+  color: var(--color-muted);
+}
+
+/* ----- 7. 코디 추천 섹션 ----- */
+.recommend__form,
+.result {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.choice {
+  margin-bottom: 24px;
+}
+
+.choice__title {
+  margin-bottom: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* 선택 버튼들을 가로로 나열하고, 자리가 부족하면 다음 줄로 넘겨요 */
+.choice__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 선택용 동그란 버튼(칩) */
+.chip {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.chip:hover {
+  border-color: var(--color-primary);
+}
+
+/* 선택된 칩 (aria-pressed="true"일 때) */
+.chip[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* 안내 메시지 영역 */
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-text);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* 오류 메시지일 때는 빨간 계열로 */
+.status.is-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+/* hidden 속성이 있으면 반드시 숨겨요 (display: flex보다 우선) */
+[hidden] {
+  display: none !important;
+}
+
+/* 로딩 중 빙글빙글 도는 동그라미 */
+.spinner {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 122, 138, 0.3);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 결과 카드 */
+.result {
+  margin-top: 24px;
+  animation: fadeUp 0.4s ease;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result__title {
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.result__list {
+  display: grid;
+  gap: 12px;
+}
+
+.result__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.result__icon {
+  flex-shrink: 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.result__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.result__value {
+  font-weight: 600;
+  /* 긴 글자도 카드 밖으로 넘치지 않게 줄바꿈 */
+  overflow-wrap: anywhere;
+}
+
+.result__reason {
+  margin: 16px 0 20px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+}
+
+.result__reason-text {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* ----- 8. 이용 방법 / FAQ 섹션 ----- */
+.guide {
+  background: var(--color-surface);
+}
+
+/* 모바일: 단계 카드를 세로로 쌓아요 */
+.steps {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 56px;
+}
+
+.step {
+  padding: 24px 20px;
+  text-align: center;
+  background: var(--color-bg);
+}
+
+.step__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+}
+
+.step__title {
+  margin-bottom: 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.step__desc {
+  color: var(--color-muted);
+}
+
+.faq__heading {
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.faq {
+  display: grid;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.faq__item {
+  padding: 0;
+  box-shadow: none;
+  border-radius: var(--radius-md);
+}
+
+.faq__q {
+  position: relative;
+  padding: 18px 48px 18px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none; /* 기본 삼각형 표시 없애기 */
+}
+
+/* 사파리에서 기본 삼각형 없애기 */
+.faq__q::-webkit-details-marker {
+  display: none;
+}
+
+/* 오른쪽에 + 기호 표시 */
+.faq__q::after {
+  content: "+";
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.4rem;
+  color: var(--color-primary);
+  transition: transform 0.2s;
+}
+
+/* 열렸을 때 + 가 x 처럼 회전해요 */
+.faq__item[open] .faq__q::after {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.faq__a {
+  padding: 0 20px 18px;
+  color: var(--color-muted);
+}
+
+/* ----- 9. 푸터 ----- */
+.footer {
+  padding: 24px 20px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* =========================================
+   반응형: 화면 크기별 레이아웃
+   ========================================= */
+
+/* ----- 태블릿 (768px 이상) ----- */
+@media (min-width: 768px) {
+  /* 햄버거 버튼은 숨기고 메뉴를 가로로 항상 보여줘요 */
+  .menu-toggle {
+    display: none;
+  }
+
+  .nav {
+    display: block;
+    position: static;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .nav__list {
+    flex-direction: row;
+    gap: 4px;
+    padding: 0;
+  }
+
+  .nav__link {
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+  }
+
+  .section {
+    padding: 96px 0;
+  }
+
+  .section__title {
+    font-size: 2rem;
+  }
+
+  .hero {
+    padding-top: calc(var(--header-height) + 112px);
+    padding-bottom: 128px;
+  }
+
+  .hero__title {
+    font-size: 3.25rem;
+  }
+
+  .recommend__form,
+  .result {
+    padding: 36px 40px;
+  }
+
+  /* 단계 카드를 가로 3칸으로 배치 */
+  .steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ----- 데스크톱 (1200px 이상) ----- */
+@media (min-width: 1200px) {
+  .container,
+  .header__inner {
+    padding: 0 40px;
+  }
+
+  .hero__title {
+    font-size: 4rem;
+  }
+
+  .hero__desc {
+    max-width: 560px;
+    font-size: 1.2rem;
+  }
+
+  .steps {
+    gap: 24px;
+  }
+
+  .step {
+    padding: 36px 28px;
+  }
+}
+
+/* 움직임을 줄이도록 설정한 사용자에게는 애니메이션을 최소화해요 */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+
+  /* 결과 카드 등장 효과는 끄고, 로딩 동그라미는 천천히 돌려요 */
+  .result {
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 2s;
+  }
+}
