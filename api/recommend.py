@@ -12,7 +12,7 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
-from http.server import BaseHTTPRequestHandler
+from http import HTTPStatus
 
 from google import genai
 from google.genai import types
@@ -207,69 +207,75 @@ def parse_ai_result(text):
     return result
 
 
-# ===== 5. Vercel이 실행하는 요청 처리기 =====
-# Vercel Python 함수는 handler라는 이름의 클래스를 찾아서 실행해요.
+# ===== 5. Vercel이 실행하는 요청 처리기 (WSGI) =====
+# WSGI는 파이썬 웹 서버가 우리 코드를 부르는 표준 약속이에요.
+# 서버는 요청이 올 때마다 app(environ, start_response)를 호출해요.
+#   - environ: 요청 정보가 담긴 딕셔너리 (방식, 길이, 본문 등)
+#   - start_response: 상태 코드와 헤더를 서버에 알려주는 함수
+# app은 응답 본문(바이트)을 리스트에 담아 돌려주면 돼요.
 
-class handler(BaseHTTPRequestHandler):
 
-    def send_json(self, status, data):
-        """상태 코드와 JSON 데이터를 응답으로 보내요."""
-        # ensure_ascii=False: 한글이 \uXXXX 모양으로 바뀌지 않고 그대로 나가요
-        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")  # 추천 결과는 저장(캐시)하지 않아요
-        self.end_headers()
-        self.wfile.write(body)
+def make_response(start_response, status, data, extra_headers=None):
+    """상태 코드와 JSON 데이터로 응답을 만들어요."""
+    # ensure_ascii=False: 한글이 \uXXXX 모양으로 바뀌지 않고 그대로 나가요
+    body = json.dumps(data, ensure_ascii=False).encode("utf-8")
 
-    def read_json_body(self):
-        """요청 본문(body)을 읽어서 파이썬 딕셔너리로 바꿔요."""
-        try:
-            length = int(self.headers.get("Content-Length") or 0)
-        except ValueError:
-            raise ApiError(400, "요청 형식이 올바르지 않아요.")
+    # WSGI는 상태를 "200 OK"처럼 숫자와 설명을 붙인 글자로 받아요
+    status_line = f"{status} {HTTPStatus(status).phrase}"
+    headers = [
+        ("Content-Type", "application/json; charset=utf-8"),
+        ("Content-Length", str(len(body))),
+        ("Cache-Control", "no-store"),  # 추천 결과는 저장(캐시)하지 않아요
+    ]
+    if extra_headers:
+        headers.extend(extra_headers)
 
-        if length <= 0:
-            raise ApiError(400, "성별과 기분을 모두 선택해주세요.")
-        if length > MAX_BODY_BYTES:
-            raise ApiError(400, "요청 데이터가 너무 커요.")
+    start_response(status_line, headers)
+    return [body]
 
-        raw = self.rfile.read(length)
-        try:
-            return json.loads(raw.decode("utf-8"))
-        except (ValueError, UnicodeDecodeError):
-            raise ApiError(400, "요청 형식이 올바르지 않아요.")
 
-    def do_POST(self):
-        """POST /api/recommend 요청을 처리해요."""
-        try:
-            data = self.read_json_body()          # 1) 요청 읽기
-            gender, mood = validate_input(data)   # 2) 입력 검증
-            text = call_gemini(gender, mood)      # 3) AI 호출
-            result = parse_ai_result(text)        # 4) AI 답 확인
-            self.send_json(200, result)           # 5) 성공 응답
-        except ApiError as error:
-            # 우리가 미리 정한 안전한 메시지만 보내요
-            self.send_json(error.status, {"error": error.message})
-        except Exception as error:
-            # 예상하지 못한 오류: 내부 내용은 숨기고 일반 안내만 보내요
-            print(f"[recommend] 예상하지 못한 오류: {type(error).__name__}")
-            self.send_json(500, {"error": "잠시 후 다시 시도해주세요."})
+def read_json_body(environ):
+    """요청 본문(body)을 읽어서 파이썬 딕셔너리로 바꿔요."""
+    # CONTENT_LENGTH: 요청 본문이 몇 바이트인지 알려주는 값이에요
+    try:
+        length = int(environ.get("CONTENT_LENGTH") or 0)
+    except ValueError:
+        raise ApiError(400, "요청 형식이 올바르지 않아요.")
 
-    def do_GET(self):
-        """POST가 아닌 요청은 받지 않아요."""
-        self.send_response(405)
-        self.send_header("Allow", "POST")
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(json.dumps({"error": "POST 요청만 사용할 수 있어요."}, ensure_ascii=False).encode("utf-8"))
+    if length <= 0:
+        raise ApiError(400, "성별과 기분을 모두 선택해주세요.")
+    if length > MAX_BODY_BYTES:
+        raise ApiError(400, "요청 데이터가 너무 커요.")
 
-    # PUT, DELETE 등 다른 방식도 GET과 똑같이 거절해요
-    do_PUT = do_GET
-    do_DELETE = do_GET
-    do_PATCH = do_GET
+    # wsgi.input: 요청 본문을 읽을 수 있는 통로예요. 정해진 길이만큼만 읽어요.
+    raw = environ["wsgi.input"].read(length)
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        raise ApiError(400, "요청 형식이 올바르지 않아요.")
 
-    def log_message(self, format, *args):
-        """기본 접속 기록은 끄고, 필요한 것만 직접 print로 남겨요."""
-        return
+
+def app(environ, start_response):
+    """POST /api/recommend 요청을 처리해요. (Vercel이 이 함수를 불러요)"""
+    # POST가 아닌 요청(GET 등)은 받지 않아요
+    if environ.get("REQUEST_METHOD", "").upper() != "POST":
+        return make_response(
+            start_response,
+            405,
+            {"error": "POST 요청만 사용할 수 있어요."},
+            extra_headers=[("Allow", "POST")],
+        )
+
+    try:
+        data = read_json_body(environ)        # 1) 요청 읽기
+        gender, mood = validate_input(data)   # 2) 입력 검증
+        text = call_gemini(gender, mood)      # 3) AI 호출
+        result = parse_ai_result(text)        # 4) AI 답 확인
+        return make_response(start_response, 200, result)  # 5) 성공 응답
+    except ApiError as error:
+        # 우리가 미리 정한 안전한 메시지만 보내요
+        return make_response(start_response, error.status, {"error": error.message})
+    except Exception as error:
+        # 예상하지 못한 오류: 오류 종류 이름만 기록하고, 내부 내용은 숨겨요
+        print(f"[recommend] 예상하지 못한 오류: {type(error).__name__}")
+        return make_response(start_response, 500, {"error": "잠시 후 다시 시도해주세요."})

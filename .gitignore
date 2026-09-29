@@ -3,4 +3,6 @@
 .vercel
 __pycache__/
 *.pyc
-Thumbs.db
+Thubs.db
+.venv/
+.env*
