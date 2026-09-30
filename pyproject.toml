@@ -8,5 +8,3 @@ dependencies = [
 
 [tool.vercel]
 entrypoint = "api.recommend:app"
-[tool.vercel]
-entrypoint = "api.recommend:app"
